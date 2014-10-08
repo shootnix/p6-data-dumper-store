@@ -1,24 +1,44 @@
 BEGIN { @*INC.unshift('lib') }
 
 use Test;
-#no warn;
-
 use Data::Dumper::Store;
 
-ok my $store = Data::Dumper::Store.new(path => '.'), 'new';
-is $store.path, '.', 'path is "."';
+ok my $storage = Data::Dumper::Store.new(path => '.'), 'new';
+is $storage.path, '.', 'path is "."';
 
-ok ! $store.load, 'load empty data';
-ok ! $store.commit, 'save with undefined filename';
-ok ! $store.commit('somefile'), 'store with empty data';
+try { $storage.init }
+if $! {
+    pass 'load empty data';
+}
+
+try { $storage.commit }
+if $! {
+    pass 'save with undefined filename';
+    is $!, 'Undefined Filename', 'Msg is "Undefined Filename"';
+}
+
+try { $storage.commit('somefile') }
+if $! {
+    pass 'store with empty data';
+    is $!, 'Nothing to Save', 'Msg is "Nothing to Save"';
+}
+
+try { $storage.init('non-existing-file') }
+if $! {
+    pass 'init with non-existing-file';
+}
 
 my %data = (foo => 'bar', baz => 'bee');
-ok $store.load(%data), 'load from (Hash)';
-is $store.get('foo'), 'bar', 'get';
-$store.set('one', 'two');
-is $store.get('one'), 'two', 'get one';
-ok $store.commit('test-dump'), 'save';
+ok $storage.init(%data), 'load from (Hash)';
 
-ok $store.load('test-dump'), 'load from file';
-is $store.get('foo'), 'bar', 'loaded ok';
-ok $store.destroy, 'destroy';
+ok $storage.dump, 'dump';
+is $storage.dump<foo>, 'bar', '"foo" from dump eq "bar"';
+
+is $storage.get('foo'), 'bar', 'get';
+$storage.set('one', 'two');
+is $storage.get('one'), 'two', 'get one';
+ok $storage.commit('test-dump'), 'save';
+
+ok $storage.init('test-dump'), 'load from file';
+is $storage.get('foo'), 'bar', 'loaded ok';
+ok $storage.destroy, 'destroy';

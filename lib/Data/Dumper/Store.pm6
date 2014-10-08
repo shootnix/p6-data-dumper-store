@@ -3,7 +3,7 @@ class Data::Dumper::Store {
     has $.filename is rw;
     has %!data;
 
-    multi method load(Str $filename) {
+    multi method init(Str $filename) {
         $.filename = $filename;
         my $fh = open "$.path/$filename", :r;
         my $data = $fh.slurp;
@@ -14,26 +14,18 @@ class Data::Dumper::Store {
         return 1;
     }
 
-    multi method load(%data) {
+    multi method init(%data) {
         %!data = %data;
     }
 
-    multi method load { warn "ERROR: Undefined Resourse"; return False }
+    multi method init { die "Undefined Resourse" }
 
     method get($key) { return %!data{$key} }
-    method set($key, $val) { %!data{$key} = $val; return $val }
+    method set($key, $val) { %!data{$key} = $val }
 
     method commit($filename = $.filename) {
-        #die "Undefined filename" unless $filename;
-        unless ($filename) {
-            warn "ERROR: Undefined Filename";
-            return False;
-        }
-
-        unless (%!data) {
-            warn "ERROR: Nothing to Save";
-            return False;
-        }
+        die "Undefined Filename" unless $filename;
+        die "Nothing to Save" unless %!data;
 
         my $fh = open "$.path/$filename", :rw;
         $fh.print(%!data.perl);
@@ -42,8 +34,9 @@ class Data::Dumper::Store {
         return 1;
     }
 
-    method destroy (Str $filename = $.filename) {
+    method destroy (Str $filename = $.filename) { unlink "$.path/$filename" }
 
-        unlink "$.path/$filename";
+    method dump {
+        return %!data;
     }
 }
